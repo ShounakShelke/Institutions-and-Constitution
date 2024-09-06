@@ -1,21 +1,44 @@
-// backend/server.js
+const express = require('express')
+const mongoose =  require('mongoose')
+const path = require('path')
+const port = 3019
 
-const express = require('express');
-const connectDB = require('./config/db');
-const authRoutes = require('./routes/auth');
-const constitutionRoutes = require('./routes/constitution');
+const app = express()
+app.use(express.static(__dirname))
+app.use(express.urlencoded({extended:true}))
 
-const app = express();
+mongoose.connect('mongodb://127.0.0.1:27017/registers')
+const db = mongoose.connection
+db.once('open',()=>{
+    console.log("Mongodb connection successful")
+})
 
-// Connect to MongoDB
-connectDB();
+const userSchema= new mongoose.Schema({
+    phone_no :number,
+    name:String,
+    email:String,
+    comment:String
+})
 
-// Middleware
-app.use(express.json());
+const Users = mongoose.model("data",userSchema)
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/constitution', constitutionRoutes);
+app.get('/',(req,res)=>{
+    res.send(path.join(__dirname,'form.html' ))
+})
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.post('/post',async (req,res)=>{
+    const {phone_no,name,email,comment} = req.body
+    const user = new Users({
+        phone_no,
+        name,
+        email,
+        comment
+    })
+    await user.save()
+    console.log(user)
+    res.send("Form Submission Successful")
+})
+
+app.listen(port,()=>{
+    console.log("Server started")
+})
